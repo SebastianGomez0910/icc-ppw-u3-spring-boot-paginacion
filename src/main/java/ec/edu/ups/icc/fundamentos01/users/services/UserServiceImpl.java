@@ -1,10 +1,11 @@
 package ec.edu.ups.icc.fundamentos01.users.services;
 
 import java.util.List;
-
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import ec.edu.ups.icc.fundamentos01.exceptions.domain.NotFoundException;
 import ec.edu.ups.icc.fundamentos01.users.dtos.CreateUserDto;
 import ec.edu.ups.icc.fundamentos01.users.dtos.PartialUpdateUserDto;
 import ec.edu.ups.icc.fundamentos01.users.dtos.UpdateUserDto;
@@ -35,108 +36,104 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDto findOne(int id) {
         return userRepo.findById((long) id)
-                .map(User::fromEntity)
-                .map(UserMapper::toResponse)
-                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+            .map(User::fromEntity)
+            .map(UserMapper::toResponse)
+            .orElseThrow(() ->
+                new NotFoundException("Usuario no encontrado")
+            );
     }
 
     @Override
     public UserResponseDto create(CreateUserDto dto) {
 
-           // Regla: email único
-    if (userRepo.findByEmail(dto.email).isPresent()) {
-        throw new IllegalStateException("El email ya está registrado");
-    } 
-    
-     User user = UserMapper.fromCreateDto(dto);
+        // Regla: email único
+        if (userRepo.findByEmail(dto.email).isPresent()) {
+            throw new IllegalStateException("El email ya está registrado");
+        }
 
-    UserEntity saved = userRepo.save(user.toEntity());
+        User user = UserMapper.fromCreateDto(dto);
 
-    return UserMapper.toResponse(User.fromEntity(saved));
+        UserEntity saved = userRepo.save(user.toEntity());
 
+        return UserMapper.toResponse(User.fromEntity(saved));
 
+      
     }
 
     @Override
     public UserResponseDto update(int id, UpdateUserDto dto) {
-    //     Optional<UserEntity> userEntity= userRepo.findById((long) id);
-    //    if(!userEntity.isPresent()){
-    //     throw new IllegalStateException("Usuario no encontrado");
-    //    }      
-    //    userEntity.get().setName(dto.name);
-    //      userEntity.get().setEmail(dto.email);
+        // Optional<UserEntity> userEntity= userRepo.findById((long) id);
+        // if(!userEntity.isPresent()){
+        // throw new IllegalStateException("Usuario no encontrado");
+        // }
+        // userEntity.get().setName(dto.name);
+        // userEntity.get().setEmail(dto.email);
 
-    //     userRepo.save(userEntity.get());
+        // userRepo.save(userEntity.get());
 
-    //     User responseDto = User.fromEntity(userEntity.get());
-    //     UserResponseDto dtoResponse = UserMapper.toResponse(responseDto);
-    //     return dtoResponse;
+        // User responseDto = User.fromEntity(userEntity.get());
+        // UserResponseDto dtoResponse = UserMapper.toResponse(responseDto);
+        // return dtoResponse;
 
-    return userRepo.findById((long) id)
-        // Entity → Domain
-        .map(User::fromEntity)
+        return userRepo.findById((long) id)
+                // Entity → Domain
+                .map(User::fromEntity)
 
-        // Aplicar cambios permitidos en el dominio
-        .map(u-> u.update(dto))
+                // Aplicar cambios permitidos en el dominio
+                .map(u -> u.update(dto))
 
-        // Domain → Entity
-        .map(User::toEntity)
+                // Domain → Entity
+                .map(User::toEntity)
 
-        // Persistencia
-        .map(userRepo::save)
+                // Persistencia
+                .map(userRepo::save)
 
-        // Entity → Domain
-        .map(User::fromEntity)
+                // Entity → Domain
+                .map(User::fromEntity)
 
-        // Domain → DTO
-        .map(UserMapper::toResponse)
+                // Domain → DTO
+                .map(UserMapper::toResponse)
 
-        // Error controlado si no existe
-        .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+                // Error controlado si no existe
+                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
     }
 
+    @Override
+    public UserResponseDto partialUpdate(int id, PartialUpdateUserDto dto) {
+
+        return userRepo.findById((long) id)
+                // Entity → Domain
+                .map(User::fromEntity)
+
+                // Aplicar solo los cambios presentes
+                .map(user -> user.partialUpdate(dto))
+
+                // Domain → Entity
+                .map(User::toEntity)
+
+                // Persistencia
+                .map(userRepo::save)
+
+                // Entity → Domain
+                .map(User::fromEntity)
+
+                // Domain → DTO
+                .map(UserMapper::toResponse)
+
+                // Error si no existe
+                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+    }
 
     @Override
-public UserResponseDto partialUpdate(int id, PartialUpdateUserDto dto) {
+    public void delete(int id) {
 
-
-    return userRepo.findById((long) id)
-        // Entity → Domain
-        .map(User::fromEntity)
-
-        // Aplicar solo los cambios presentes
-        .map(user -> user.partialUpdate(dto))
-
-        // Domain → Entity
-        .map(User::toEntity)
-
-        // Persistencia
-        .map(userRepo::save)
-
-        // Entity → Domain
-        .map(User::fromEntity)
-
-        // Domain → DTO
-        .map(UserMapper::toResponse)
-
-        // Error si no existe
-        .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
-}
-
-
-
-
-  @Override
-public void delete(int id) {
-
-    // Verifica existencia y elimina
-    userRepo.findById((long) id)
-        .ifPresentOrElse(
-            userRepo::delete,
-            () -> {
-                throw new IllegalStateException("Usuario no encontrado");
-            }
-        );
-}
+        // Verifica existencia y elimina
+        userRepo.findById((long) id)
+                .ifPresentOrElse(
+                        userRepo::delete,
+                        () -> {
+                            throw new IllegalStateException("Usuario no encontrado");
+                        });
+    }
 
 }
