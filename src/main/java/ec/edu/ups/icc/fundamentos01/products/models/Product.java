@@ -1,5 +1,7 @@
 package ec.edu.ups.icc.fundamentos01.products.models;
 
+import java.util.Set;
+
 import ec.edu.ups.icc.fundamentos01.categories.entity.CategoryEntity;
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.PartialUpdateProductDto;
@@ -49,7 +51,22 @@ public class Product {
      * 
      * @return ProductEntity lista para guardar en BD
      */
-    public ProductEntity toEntity(UserEntity owner, CategoryEntity category) {
+    // public ProductEntity toEntity(UserEntity owner, CategoryEntity category) {
+    // ProductEntity entity = new ProductEntity();
+    // if (this.id != null && this.id > 0) {
+    // entity.setId(this.id);
+    // }
+
+    // entity.setName(this.name);
+    // entity.setPrice(this.price);
+    // entity.setDescription(this.description);
+
+    // // Asignar relaciones
+    // entity.setOwner(owner);
+    // entity.setCategory(category);
+    // return entity;
+    // }
+    public ProductEntity toEntity(UserEntity owner) {
         ProductEntity entity = new ProductEntity();
         if (this.id != null && this.id > 0) {
             entity.setId(this.id);
@@ -61,7 +78,7 @@ public class Product {
 
         // Asignar relaciones
         entity.setOwner(owner);
-        entity.setCategory(category);
+
         return entity;
     }
 

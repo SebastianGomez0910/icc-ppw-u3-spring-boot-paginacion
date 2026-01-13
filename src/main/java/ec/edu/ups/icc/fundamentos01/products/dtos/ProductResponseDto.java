@@ -1,6 +1,7 @@
 package ec.edu.ups.icc.fundamentos01.products.dtos;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
@@ -12,7 +13,7 @@ import ec.edu.ups.icc.fundamentos01.categories.dtos.CategoryResponseDto;
         "price",
         "description",
         "user",
-        "category",
+        "categories",
         "createdAt",
         "updatedAt"
 })
@@ -25,7 +26,10 @@ public class ProductResponseDto {
     // ============== OBJETOS ANIDADOS ==============
 
     public UserSummaryDto user;
-    public CategoryResponseDto category;
+
+    // public CategoryResponseDto category;
+    // ============== CATEGORÍAS (N:N) - Lista de objetos ==============
+    public List<CategoryResponseDto> categories;
 
     // ============== AUDITORÍA ==============
 

@@ -1,5 +1,8 @@
 package ec.edu.ups.icc.fundamentos01.products.models;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import ec.edu.ups.icc.fundamentos01.categories.entity.CategoryEntity;
 import ec.edu.ups.icc.fundamentos01.core.entities.BaseModel;
 import ec.edu.ups.icc.fundamentos01.users.models.UserEntity;
@@ -31,9 +34,21 @@ public class ProductEntity extends BaseModel {
      * Relación Many-to-One con Category
      * Muchos productos pertenecen a una categoría
      */
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private CategoryEntity category;
+    // @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    // @JoinColumn(name = "category_id", nullable = false)
+    // private CategoryEntity category;
+
+    /**
+     * Relación Many-to-Many con Category
+     * Un producto puede tener múltiples categorías
+     * Una categoría puede estar en múltiples productos
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "product_categories", // Tabla intermedia
+            joinColumns = @JoinColumn(name = "product_id"), // FK hacia products
+            inverseJoinColumns = @JoinColumn(name = "category_id") // FK hacia categories
+    )
+    private Set<CategoryEntity> categories = new HashSet<>();
 
     // Constructores
     public ProductEntity() {
@@ -71,12 +86,38 @@ public class ProductEntity extends BaseModel {
         this.owner = owner;
     }
 
-    public CategoryEntity getCategory() {
-        return category;
+    public Set<CategoryEntity> getCategories() {
+        return categories;
     }
 
-    public void setCategory(CategoryEntity category) {
-        this.category = category;
+    public void setCategories(Set<CategoryEntity> categories) {
+        this.categories = categories;
     }
+
+    public void addCategory(CategoryEntity category) {
+        this.categories.add(category);
+        // category.getProducts().add(this); // Sincroniza el otro lado
+    }
+
+    /**
+     * Remueve una categoría del producto y sincroniza la relación bidireccional
+     */
+    public void removeCategory(CategoryEntity category) {
+        this.categories.remove(category);
+        // category.getProducts().remove(this); // Sincroniza el otro lado
+    }
+
+    /**
+     * Limpia todas las categorías y sincroniza las relaciones
+     */
+    public void clearCategories() {
+        // Primero remover de cada categoría
+        for (CategoryEntity category : new HashSet<>(this.categories)) {
+            // category.getProducts().remove(this);
+        }
+        // Luego limpiar la colección local
+        this.categories.clear();
+    }
+    // ... resto
 
 }

@@ -1,8 +1,14 @@
 package ec.edu.ups.icc.fundamentos01.categories.entity;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import ec.edu.ups.icc.fundamentos01.core.entities.BaseModel;
+import ec.edu.ups.icc.fundamentos01.products.models.ProductEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -14,6 +20,9 @@ public class CategoryEntity extends BaseModel {
 
     @Column(length = 500)
     private String description;
+
+    @ManyToMany(mappedBy = "categories", fetch = FetchType.LAZY)
+    private Set<ProductEntity> products = new HashSet<>();
 
     // Getters y setters
     public String getName() {
@@ -31,4 +40,13 @@ public class CategoryEntity extends BaseModel {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    public Set<ProductEntity> getProducts() {
+        return products;
+    }
+
+    public void setProducts(Set<ProductEntity> products) {
+        this.products = products;
+    }
+
 }
