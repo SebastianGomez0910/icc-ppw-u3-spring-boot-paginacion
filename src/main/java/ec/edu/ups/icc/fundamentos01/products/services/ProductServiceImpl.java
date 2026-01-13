@@ -3,8 +3,12 @@ package ec.edu.ups.icc.fundamentos01.products.services;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
+import ec.edu.ups.icc.fundamentos01.categories.dtos.CategoryResponseDto;
+import ec.edu.ups.icc.fundamentos01.categories.entity.CategoryEntity;
+import ec.edu.ups.icc.fundamentos01.categories.reporitory.CategoryRepository;
 import ec.edu.ups.icc.fundamentos01.exceptions.domain.BusinessException;
 import ec.edu.ups.icc.fundamentos01.exceptions.domain.ConflictException;
+import ec.edu.ups.icc.fundamentos01.exceptions.domain.NotFoundException;
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.PartialUpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.SecureUpdateProductDto;
@@ -15,27 +19,33 @@ import ec.edu.ups.icc.fundamentos01.products.mappers.ProductMapper;
 import ec.edu.ups.icc.fundamentos01.products.models.Product;
 import ec.edu.ups.icc.fundamentos01.products.models.ProductEntity;
 import ec.edu.ups.icc.fundamentos01.products.repository.ProductRepository;
+import ec.edu.ups.icc.fundamentos01.users.models.UserEntity;
+import ec.edu.ups.icc.fundamentos01.users.repository.UserRepository;
 
 @Service
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepo;
+    private final UserRepository userRepo;
+    private final CategoryRepository categoryRepo;
 
-    public ProductServiceImpl(ProductRepository productRepo) {
+    public ProductServiceImpl(ProductRepository productRepo, UserRepository userRepo,
+            CategoryRepository categoryRepo) {
         this.productRepo = productRepo;
+        this.userRepo = userRepo;
+        this.categoryRepo = categoryRepo;
     }
 
     @Override
     public List<ProductResponseDto> findAll() {
         return productRepo.findAll()
                 .stream()
-                .map(Product::fromEntity) // Entity → Domain
-                .map(ProductMapper::toResponse) // Domain → DTO
+                .map(this::toResponseDto)
                 .toList();
     }
 
     @Override
-    public ProductResponseDto findOne(int id) {
+    public ProductResponseDto findOne(Long id) {
         return productRepo.findById((long) id)
                 .map(Product::fromEntity)
                 .map(ProductMapper::toResponse)
@@ -44,72 +54,109 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponseDto create(CreateProductDto dto) {
+        // 1. VALIDAR EXISTENCIA DE RELACIONES
+        UserEntity owner = userRepo.findById(dto.userId)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID: " + dto.userId));
+
+        CategoryEntity category = categoryRepo.findById(dto.categoryId)
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada con ID: " + dto.categoryId));
 
         // Regla: nombre único
         if (productRepo.findByName(dto.name).isPresent()) {
             throw new IllegalStateException("El nombre del producto ya está registrado");
         }
 
-        Product product = ProductMapper.fromCreateDto(dto);
+        // 2. CREAR MODELO DE DOMINIO
+        Product product = Product.fromDto(dto);
 
-        ProductEntity saved = productRepo.save(product.toEntity());
+        // 3. CONVERTIR A ENTIDAD CON RELACIONES
+        ProductEntity entity = product.toEntity(owner, category);
 
-        return ProductMapper.toResponse(Product.fromEntity(saved));
+        // 4. PERSISTIR
+        ProductEntity saved = productRepo.save(entity);
+
+        // 5. CONVERTIR A DTO DE RESPUESTA
+        return toResponseDto(saved);
     }
 
     @Override
-    public ProductResponseDto update(int id, UpdateProductDto dto) {
-        return productRepo.findById((long) id)
-                // Entity → Domain
-                .map(Product::fromEntity)
+    public ProductResponseDto update(Long id, UpdateProductDto dto) {
+        // 1. BUSCAR PRODUCTO EXISTENTE
+        ProductEntity existing = productRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado con ID: " + id));
 
-                // Aplicar cambios permitidos en el dominio
-                .map(p -> p.update(dto))
+        // 2. VALIDAR NUEVA CATEGORÍA (si cambió)
+        CategoryEntity newCategory = categoryRepo.findById(dto.categoryId)
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada con ID: " + dto.categoryId));
 
-                // Domain → Entity
-                .map(Product::toEntity)
+        // 3. ACTUALIZAR USANDO DOMINIO
+        Product product = Product.fromEntity(existing);
+        product.update(dto);
 
-                // Persistencia
-                .map(productRepo::save)
+        // 4. CONVERTIR A ENTIDAD MANTENIENDO OWNER ORIGINAL
+        ProductEntity updated = product.toEntity(existing.getOwner(), newCategory);
+        updated.setId(id); // Asegurar que mantiene el ID
 
-                // Entity → Domain
-                .map(Product::fromEntity)
-
-                // Domain → DTO
-                .map(ProductMapper::toResponse)
-
-                // Error controlado si no existe
-                .orElseThrow(() -> new IllegalStateException("Producto no encontrado"));
+        // 5. PERSISTIR Y RESPONDER
+        ProductEntity saved = productRepo.save(updated);
+        return toResponseDto(saved);
     }
 
     @Override
-    public ProductResponseDto partialUpdate(int id, PartialUpdateProductDto dto) {
+    public List<ProductResponseDto> findByUserId(Long userId) {
 
-        return productRepo.findById((long) id)
-                // Entity → Domain
-                .map(Product::fromEntity)
+        // Validar que el usuario existe
+        if (!userRepo.existsById(userId)) {
+            throw new NotFoundException("Usuario no encontrado con ID: " + userId);
+        }
 
-                // Aplicar solo los cambios presentes
-                .map(product -> product.partialUpdate(dto))
-
-                // Domain → Entity
-                .map(Product::toEntity)
-
-                // Persistencia
-                .map(productRepo::save)
-
-                // Entity → Domain
-                .map(Product::fromEntity)
-
-                // Domain → DTO
-                .map(ProductMapper::toResponse)
-
-                // Error si no existe
-                .orElseThrow(() -> new IllegalStateException("Producto no encontrado"));
+        return productRepo.findByOwnerId(userId)
+                .stream()
+                .map(this::toResponseDto)
+                .toList();
     }
 
     @Override
-    public void delete(int id) {
+    public List<ProductResponseDto> findByCategoryId(Long categoryId) {
+
+        // Validar que la categoría existe
+        if (!categoryRepo.existsById(categoryId)) {
+            throw new NotFoundException("Categoría no encontrada con ID: " + categoryId);
+        }
+
+        return productRepo.findByCategoryId(categoryId)
+                .stream()
+                .map(this::toResponseDto)
+                .toList();
+    }
+
+    @Override
+    public ProductResponseDto partialUpdate(Long id, PartialUpdateProductDto dto) {
+
+        // 1. BUSCAR PRODUCTO EXISTENTE
+        ProductEntity existing = productRepo.findById(id)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado con ID: " + id));
+
+        // 2. VALIDAR NUEVA CATEGORÍA (si cambió)
+        CategoryEntity newCategory = categoryRepo.findById(existing.getCategory().getId())
+                .orElseThrow(() -> new NotFoundException(
+                        "Categoría no encontrada con ID: " + existing.getCategory().getId()));
+
+        // 3. ACTUALIZAR USANDO DOMINIO
+        Product product = Product.fromEntity(existing);
+        product.update(dto);
+
+        // 4. CONVERTIR A ENTIDAD MANTENIENDO OWNER ORIGINAL
+        ProductEntity updated = product.toEntity(existing.getOwner(), newCategory);
+        updated.setId(id); // Asegurar que mantiene el ID
+
+        // 5. PERSISTIR Y RESPONDER
+        ProductEntity saved = productRepo.save(updated);
+        return toResponseDto(saved);
+    }
+
+    @Override
+    public void delete(Long id) {
 
         // Verifica existencia y elimina
         productRepo.findById((long) id)
@@ -134,6 +181,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponseDto secureUpdate(int id, SecureUpdateProductDto dto) {
+
+        UserEntity owner = userRepo.findById(dto.userId)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID: " + dto.userId));
+
+        CategoryEntity category = categoryRepo.findById(dto.categoryId)
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada con ID: " + dto.categoryId));
+
         ProductEntity entity = productRepo.findById((long) id)
                 .orElseThrow(() -> new BusinessException("Producto no encontrado"));
 
@@ -153,9 +207,43 @@ public class ProductServiceImpl implements ProductService {
         if (dto.description != null)
             product.setDescription(dto.description);
 
-        ProductEntity saved = productRepo.save(product.toEntity());
+        ProductEntity saved = productRepo.save(product.toEntity(owner, category));
 
         return ProductMapper.toResponse(Product.fromEntity(saved));
+    }
+
+    /**
+     * Convierte ProductEntity a ProductResponseDto
+     * Usa estructura anidada para mejor organización semántica
+     */
+    private ProductResponseDto toResponseDto(ProductEntity entity) {
+        ProductResponseDto dto = new ProductResponseDto();
+
+        // Campos básicos del producto
+        dto.id = entity.getId();
+        dto.name = entity.getName();
+        dto.price = entity.getPrice();
+        dto.description = entity.getDescription();
+
+        // Crear objeto User anidado (se carga LAZY)
+        ProductResponseDto.UserSummaryDto userDto = new ProductResponseDto.UserSummaryDto();
+        userDto.id = entity.getOwner().getId();
+        userDto.name = entity.getOwner().getName();
+        userDto.email = entity.getOwner().getEmail();
+        dto.user = userDto;
+
+        // Crear objeto Category anidado (se carga LAZY)
+        CategoryResponseDto categoryDto = new CategoryResponseDto();
+        categoryDto.id = entity.getCategory().getId();
+        categoryDto.name = entity.getCategory().getName();
+        categoryDto.description = entity.getCategory().getDescription();
+        dto.category = categoryDto;
+
+        // Auditoría
+        dto.createdAt = entity.getCreatedAt();
+        dto.updatedAt = entity.getUpdatedAt();
+
+        return dto;
     }
 
 }

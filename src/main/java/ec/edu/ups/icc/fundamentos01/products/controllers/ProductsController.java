@@ -39,7 +39,7 @@ public class ProductsController {
     }
 
     @GetMapping("/{id}")
-    public ProductResponseDto findOne(@PathVariable("id") int id) {
+    public ProductResponseDto findOne(@PathVariable("id") Long id) {
         return productService.findOne(id);
     }
 
@@ -49,18 +49,19 @@ public class ProductsController {
     }
 
     @PutMapping("/{id}")
-    public ProductResponseDto update(@PathVariable("id") int id, @RequestBody UpdateProductDto dto) {
+    public ProductResponseDto update(@PathVariable("id") Long id, @RequestBody UpdateProductDto dto) {
         return productService.update(id, dto);
     }
 
     @PatchMapping("/{id}")
-    public ProductResponseDto partialUpdate(@PathVariable("id") int id, @RequestBody PartialUpdateProductDto dto) {
+    public ProductResponseDto partialUpdate(@PathVariable("id") Long id, @RequestBody PartialUpdateProductDto dto) {
         return productService.partialUpdate(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") int id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         productService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/validate-name")
@@ -73,5 +74,19 @@ public class ProductsController {
     @PutMapping("/{id}/secure-update")
     public ProductResponseDto secureUpdate(@PathVariable("id") int id, @RequestBody SecureUpdateProductDto dto) {
         return productService.secureUpdate(id, dto);
+
     }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<ProductResponseDto>> findByUserId(@PathVariable Long userId) {
+        List<ProductResponseDto> products = productService.findByUserId(userId);
+        return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<List<ProductResponseDto>> findByCategoryId(@PathVariable Long categoryId) {
+        List<ProductResponseDto> products = productService.findByCategoryId(categoryId);
+        return ResponseEntity.ok(products);
+    }
+
 }

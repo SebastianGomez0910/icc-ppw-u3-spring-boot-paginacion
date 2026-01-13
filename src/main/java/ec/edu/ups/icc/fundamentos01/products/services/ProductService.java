@@ -12,18 +12,22 @@ public interface ProductService {
 
     List<ProductResponseDto> findAll();
 
-    ProductResponseDto findOne(int id);
+    ProductResponseDto findOne(Long id);
 
     ProductResponseDto create(CreateProductDto dto);
 
-    ProductResponseDto update(int id, UpdateProductDto dto);
+    ProductResponseDto update(Long id, UpdateProductDto dto);
 
-    ProductResponseDto partialUpdate(int id, PartialUpdateProductDto dto);
+    ProductResponseDto partialUpdate(Long id, PartialUpdateProductDto dto);
 
-    void delete(int id);
+    void delete(Long id);
 
     boolean validateName(Integer id, String name);
 
     ProductResponseDto secureUpdate(int id, SecureUpdateProductDto dto);
+
+    List<ProductResponseDto> findByUserId(Long userId);
+
+    List<ProductResponseDto> findByCategoryId(Long categoryId);
 
 }

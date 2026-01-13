@@ -14,12 +14,11 @@ public class ProductMapper {
     // DTO -> Model
     public static Product fromCreateDto(CreateProductDto dto) {
         return new Product(0, dto.name, dto.price, dto.description);
-    }   
-    
+    }
+
     public static Product fromUpdateDto(UpdateProductDto dto) {
         return new Product(0, dto.name, dto.price, dto.description);
-    }   
-
+    }
 
     public static ProductResponseDto toResponse(Product product) {
         ProductResponseDto dto = new ProductResponseDto();
@@ -27,6 +26,11 @@ public class ProductMapper {
         dto.name = product.getName();
         dto.price = product.getPrice();
         dto.description = product.getDescription();
+
+        // dto.user = new ProductResponseDto.UserSummaryDto();
+        // dto.user.id = product.getOwner().getId();
+        // dto.user.username = product.getOwner().getUsername();
+
         return dto;
     }
 }

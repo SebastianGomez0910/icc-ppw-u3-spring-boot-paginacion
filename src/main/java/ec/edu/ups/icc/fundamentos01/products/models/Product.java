@@ -1,18 +1,21 @@
 package ec.edu.ups.icc.fundamentos01.products.models;
 
+import ec.edu.ups.icc.fundamentos01.categories.entity.CategoryEntity;
+import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.PartialUpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.UpdateProductDto;
+import ec.edu.ups.icc.fundamentos01.users.models.UserEntity;
 
 public class Product {
 
-    private int id;
+    private Long id;
     private String name;
     private Double price;
     private String description;
     private String createdAt;
 
     // Constructor privado para forzar uso de factory methods
-    public Product(int id, String name, Double price, String description) {
+    public Product(long id, String name, Double price, String description) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -20,37 +23,47 @@ public class Product {
         this.createdAt = java.time.LocalDateTime.now().toString();
     }
 
-
-    // ==================== FACTORY METHODS ====================
-   /**
-     * Crea un Product desde una entidad persistente
-     * @param entity Entidad recuperada de la BD
-     * @return instancia de Product para lógica de negocio
-     */
-    public static Product fromEntity(ProductEntity entity) {
-        return new Product(
-            entity.getId().intValue(),
-            entity.getName(),
-            entity.getPrice(),
-            entity.getDescription()
-        );
+    public Product(String name, Double price, String description) {
+        this.validateBusinessRules(name, price, description);
+        this.name = name;
+        this.price = price;
+        this.description = description;
     }
 
-        /**
+    private void validateBusinessRules(String name, Double price, String description) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre del producto es obligatorio");
+        }
+        if (price == null || price <= 0) {
+            throw new IllegalArgumentException("El precio debe ser mayor a 0");
+        }
+        if (description != null && description.length() > 500) {
+            throw new IllegalArgumentException("La descripción no puede superar 500 caracteres");
+        }
+    }
+
+    // ==================== FACTORY METHODS ====================
+
+    /**
      * Convierte este Product a una entidad persistente
+     * 
      * @return ProductEntity lista para guardar en BD
      */
-    public ProductEntity toEntity() {
+    public ProductEntity toEntity(UserEntity owner, CategoryEntity category) {
         ProductEntity entity = new ProductEntity();
-        if (this.id > 0) {
-            entity.setId((long) this.id);
+        if (this.id != null && this.id > 0) {
+            entity.setId(this.id);
         }
+
         entity.setName(this.name);
         entity.setPrice(this.price);
         entity.setDescription(this.description);
+
+        // Asignar relaciones
+        entity.setOwner(owner);
+        entity.setCategory(category);
         return entity;
     }
-
 
     public Product update(UpdateProductDto dto) {
         this.name = dto.name;
@@ -58,12 +71,38 @@ public class Product {
         this.description = dto.description;
         return this;
     }
-    
-    public int getId() {
+
+    public Product update(PartialUpdateProductDto dto) {
+        this.name = dto.name;
+        this.price = dto.price;
+        this.description = dto.description;
+        return this;
+    }
+
+    /**
+     * Crea un Product desde un DTO de creación
+     */
+    public static Product fromDto(CreateProductDto dto) {
+        return new Product(dto.name, dto.price, dto.description);
+    }
+
+    /**
+     * Crea un Product desde una entidad persistente
+     */
+    public static Product fromEntity(ProductEntity entity) {
+        Product product = new Product(
+                entity.getName(),
+                entity.getPrice(),
+                entity.getDescription());
+        product.id = entity.getId();
+        return product;
+    }
+
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -73,7 +112,7 @@ public class Product {
 
     public void setName(String name) {
         this.name = name;
-    } 
+    }
 
     public Double getPrice() {
         return price;
@@ -99,9 +138,8 @@ public class Product {
         this.createdAt = createdAt;
     }
 
-
     public Product partialUpdate(PartialUpdateProductDto dto) {
-       
+
         if (dto.name != null) {
             this.name = dto.name;
         }
@@ -116,6 +154,5 @@ public class Product {
 
         return this;
     }
-
 
 }

@@ -17,4 +17,12 @@ public class UpdateProductDto {
 
     @Size(max = 500)
     public String description;
+
+    // ============== ACTUALIZACIÓN DE RELACIONES ==============
+
+    @NotNull(message = "El ID de la categoría es obligatorio")
+    public Long categoryId;
+
+    // Nota: No se permite cambiar el owner de un producto una vez creado
+    // Si fuera necesario, sería una operación de negocio especial
 }
