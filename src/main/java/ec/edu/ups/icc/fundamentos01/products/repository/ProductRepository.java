@@ -3,6 +3,8 @@ package ec.edu.ups.icc.fundamentos01.products.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -64,4 +66,11 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
                         @Param("minPrice") Double minPrice,
                         @Param("maxPrice") Double maxPrice,
                         @Param("categoryId") Long categoryId);
+
+        /**
+        * Busca productos por nombre de usuario con paginación
+        */
+        @Query("SELECT p FROM ProductEntity p " +
+           "JOIN p.owner o WHERE LOWER(o.name) LIKE LOWER(CONCAT('%', :ownerName, '%'))")
+        Page<ProductEntity> findByOwnerNameContaining(@Param("ownerName") String ownerName, Pageable pageable);        
 }

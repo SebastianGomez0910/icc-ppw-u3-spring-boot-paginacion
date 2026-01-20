@@ -2,6 +2,7 @@ package ec.edu.ups.icc.fundamentos01.products.controllers;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
@@ -75,5 +77,19 @@ public class ProductController {
     public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
         productService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Lista todos los productos con paginación básica
+     * Ejemplo: GET /api/products?page=0&size=10&sort=name,asc
+     */
+    @GetMapping("paginated")
+    public ResponseEntity<Page<ProductResponseDto>> findAllPaginado(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String[] sort) {
+
+        Page<ProductResponseDto> products = productService.findAllPaginado(page, size, sort);
+        return ResponseEntity.ok(products);
     }
 }

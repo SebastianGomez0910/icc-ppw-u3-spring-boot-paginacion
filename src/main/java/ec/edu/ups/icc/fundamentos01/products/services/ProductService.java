@@ -2,6 +2,8 @@ package ec.edu.ups.icc.fundamentos01.products.services;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 
 import ec.edu.ups.icc.fundamentos01.products.dtos.UpdateProductDto;
@@ -22,5 +24,9 @@ public interface ProductService {
     ProductResponseDto update(Long id, UpdateProductDto dto);
 
     void delete(Long id);
+
+    Page<ProductResponseDto> findAllPaginado(int page, int size, String[] sort);
+
+
 
 }
