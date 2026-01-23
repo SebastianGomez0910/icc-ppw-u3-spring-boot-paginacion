@@ -19,6 +19,9 @@ public class CreateProductDto {
     @Size(max = 500, message = "La descripción no puede exceder los 500 caracteres")
     public String description;
 
+    @NotNull
+    public Integer stock;
+
     // ============== RELACIONES ==============
 
     @NotNull(message = "El ID del usuario es obligatorio")

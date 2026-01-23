@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,12 +20,13 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
 
         List<ProductEntity> findByOwnerId(Long userId);
 
-        // List<ProductEntity> findByCategoryId(Long categoryId);
+        //List<ProductEntity> findByCategoryId(Long categoryId);
 
         /**
          * Encuentra productos por nombre de usuario
          * Genera JOIN automáticamente:
          * SELECT p.* FROM products p JOIN users u ON p.user_id = u.id WHERE u.name = ?
+         * git remote -v cambiamos todo lo del git inity tod e
          */
         List<ProductEntity> findByOwnerName(String ownerName);
 
@@ -72,5 +74,37 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
         */
         @Query("SELECT p FROM ProductEntity p " +
            "JOIN p.owner o WHERE LOWER(o.name) LIKE LOWER(CONCAT('%', :ownerName, '%'))")
-        Page<ProductEntity> findByOwnerNameContaining(@Param("ownerName") String ownerName, Pageable pageable);        
+        Page<ProductEntity> findByOwnerNameContaining(@Param("ownerName") String ownerName, Pageable pageable);   
+        
+        Slice<ProductEntity> findAllBy(Pageable pegeable);
+        
+        @Query("SELECT DISTINCT p FROM ProductEntity p " +
+                "LEFT JOIN p.categories c " +
+                "WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+                "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+                "AND (:maxPrice IS NULL OR p.price <= :maxPrice) " +
+                "AND (:categoryId IS NULL OR c.id = :categoryId)")
+        Page<ProductEntity> findWithFilters(
+                @Param("name") String name,
+                @Param("minPrice") Double minPrice,
+                @Param("maxPrice") Double maxPrice,
+                @Param("categoryId") Long categoryId,
+                Pageable pegeable
+        );
+
+@Query("SELECT DISTINCT p FROM ProductEntity p " +
+           "LEFT JOIN p.categories c " +
+           "WHERE p.owner.id = :userId " +
+           "AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%'))) " + 
+           "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+           "AND (:maxPrice IS NULL OR p.price <= :maxPrice) " +
+           "AND (:categoryId IS NULL OR c.id = :categoryId)")
+    Page<ProductEntity> findByUserIdWithFilters(
+        @Param("userId") Long userId,
+        @Param("name") String name,
+        @Param("minPrice") Double minPrice,
+        @Param("maxPrice") Double maxPrice,
+        @Param("categoryId") Long categoryId,
+        Pageable pageable
+    );
 }

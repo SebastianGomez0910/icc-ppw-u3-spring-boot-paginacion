@@ -8,6 +8,7 @@ import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -155,15 +156,20 @@ public class ProductServiceImpl implements ProductService {
         dto.price = entity.getPrice();
         dto.description = entity.getDescription();
 
+        dto.createdAt = entity.getCreatedAt(); 
+        dto.updatedAt = entity.getUpdatedAt();
+
         ProductResponseDto.UserSummaryDto ownerDto = new ProductResponseDto.UserSummaryDto();
         ownerDto.id = entity.getOwner().getId();
         ownerDto.name = entity.getOwner().getName();
+        ownerDto.email = entity.getOwner().getEmail();
 
         List<CategoryResponseDto> categoryDtos = new ArrayList<>();
         for (CategoryEntity categoryEntity : entity.getCategories()) {
             CategoryResponseDto categoryDto = new CategoryResponseDto();
             categoryDto.id = categoryEntity.getId();
             categoryDto.name = categoryEntity.getName();
+
             categoryDtos.add(categoryDto);
         }
         dto.user = ownerDto;
@@ -192,10 +198,15 @@ public class ProductServiceImpl implements ProductService {
         return productPage.map(this::toResponseDto);
     }
 
+    private static final int MAX_PAGE_LIMIT = 1000;
+
     private Pageable createPageable(int page, int size, String[] sort) {
         // Validar parámetros
         if (page < 0) {
             throw new BadRequestException("La página debe ser mayor o igual a 0");
+        }
+        if(page > MAX_PAGE_LIMIT){
+            throw new BadRequestException("No se permite solicitar mas alla de la pagina "+ MAX_PAGE_LIMIT);
         }
         if (size < 1 || size > 100) {
             throw new BadRequestException("El tamaño debe estar entre 1 y 100");
@@ -212,22 +223,33 @@ public class ProductServiceImpl implements ProductService {
             return Sort.by("id");
         }
 
+        if (sort.length == 2 && (sort[1].equalsIgnoreCase("asc") || sort[1].equalsIgnoreCase("desc"))) {
+             String property = sort[0];
+             String direction = sort[1];
+             
+             if (!isValidSortProperty(property)) {
+                 throw new BadRequestException("Propiedad de ordenamiento no válida: " + property);
+             }
+             
+             return direction.equalsIgnoreCase("desc") ? 
+                    Sort.by(Sort.Order.desc(property)) : 
+                    Sort.by(Sort.Order.asc(property));
+        }
+        
         List<Sort.Order> orders = new ArrayList<>();
+        
         for (String sortParam : sort) {
             String[] parts = sortParam.split(",");
             String property = parts[0];
             String direction = parts.length > 1 ? parts[1] : "asc";
-            
-            // Validar propiedades permitidas para evitar inyección SQL
+
             if (!isValidSortProperty(property)) {
                 throw new BadRequestException("Propiedad de ordenamiento no válida: " + property);
             }
-            
-            Sort.Order order = "desc".equalsIgnoreCase(direction) 
-                ? Sort.Order.desc(property)
-                : Sort.Order.asc(property);
-            
-            orders.add(order);
+
+            orders.add(direction.equalsIgnoreCase("desc") ? 
+                       Sort.Order.desc(property) : 
+                       Sort.Order.asc(property));
         }
         
         return Sort.by(orders);
@@ -254,5 +276,37 @@ public class ProductServiceImpl implements ProductService {
         if (minPrice != null && maxPrice != null && maxPrice < minPrice) {
             throw new BadRequestException("El precio máximo debe ser mayor o igual al precio mínimo");
         }
+    }
+
+    @Override
+    public Slice<ProductResponseDto> findAllSlice(int page, int size, String[] sort) {
+        Pageable pageable = createPageable(page, size, sort);
+        return productRepository.findAllBy(pageable)
+            .map(this::toResponseDto);
+    }
+
+    @Override
+    public Page<ProductResponseDto> findWithFilters(String name, Double minPrice, Double maxPrice, Long categoryId,
+            int page, int size, String[] sort) {
+        validateFilterParameters(minPrice, maxPrice);
+
+        Pageable pageable = createPageable(page, size, sort);
+
+        return productRepository.findWithFilters(name, minPrice, maxPrice, categoryId, pageable)
+                .map(this::toResponseDto);
+    }
+
+@Override
+    public Page<ProductResponseDto> findByUserIdWithFilters(Long userId, String name, Double minPrice, Double maxPrice,
+            Long categoryId, int page, int size, String[] sort) {
+        
+        validateFilterParameters(minPrice, maxPrice);
+        
+        Pageable pageable = createPageable(page, size, sort);
+        
+        Page<ProductEntity> productPage = productRepository.findByUserIdWithFilters(
+            userId, name, minPrice, maxPrice, categoryId, pageable);
+        
+        return productPage.map(this::toResponseDto);
     }
 }

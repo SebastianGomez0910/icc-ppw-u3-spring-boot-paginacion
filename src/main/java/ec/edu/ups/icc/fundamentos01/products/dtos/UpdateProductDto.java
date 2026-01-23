@@ -20,6 +20,8 @@ public class UpdateProductDto {
     @Size(max = 500)
     public String description;
 
+    public Integer stock;
+
     // ============== ACTUALIZACIÓN DE RELACIONES ==============
 
     // @NotNull(message = "El ID de la categoría es obligatorio")

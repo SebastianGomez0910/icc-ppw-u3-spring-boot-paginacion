@@ -17,6 +17,8 @@ public class PartialUpdateProductDto {
     @Size(max = 500)
     public String description;
 
+    public Integer stock;
+
     @NotNull(message = "Debe especificar al menos una categoría")
     @Size(min = 1, message = "El producto debe tener al menos una categoría")
     public Set<Long> categoryIds; // Múltiples categorías

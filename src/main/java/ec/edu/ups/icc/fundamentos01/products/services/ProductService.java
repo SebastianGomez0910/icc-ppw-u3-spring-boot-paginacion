@@ -3,6 +3,7 @@ package ec.edu.ups.icc.fundamentos01.products.services;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Slice;
 
 import ec.edu.ups.icc.fundamentos01.products.dtos.CreateProductDto;
 
@@ -27,6 +28,20 @@ public interface ProductService {
 
     Page<ProductResponseDto> findAllPaginado(int page, int size, String[] sort);
 
+    //Page<ProductResponseDto> findAll(int page, int size, String[] sort);
 
+    Slice<ProductResponseDto> findAllSlice(int page, int size, String[] sort);
 
+    Page<ProductResponseDto> findWithFilters(String name, Double minPrice, Double maxPrice, Long categoryId, int page, int size, String[] sort);
+
+    Page<ProductResponseDto> findByUserIdWithFilters(
+        Long userId,
+        String name,
+        Double minPrice,
+        Double maxPrice,
+        Long categoryId,
+        int page,
+        int size,
+        String[] sort
+    );
 }

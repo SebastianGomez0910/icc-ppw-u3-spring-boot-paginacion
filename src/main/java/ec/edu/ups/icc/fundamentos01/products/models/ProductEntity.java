@@ -20,6 +20,9 @@ public class ProductEntity extends BaseModel {
 
     @Column(length = 500)
     private String description;
+
+    @Column(nullable = false)
+    private Integer stock;
     // ================== RELACIONES 1:N ==================
 
     /**
@@ -116,4 +119,12 @@ public class ProductEntity extends BaseModel {
 
     }
 
+    public Integer getStock() {
+        return stock;
+    }
+
+    public void setStock(Integer stock) {
+        this.stock = stock;
+    }
+    
 }
