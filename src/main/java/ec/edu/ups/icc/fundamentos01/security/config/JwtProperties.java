@@ -15,43 +15,15 @@ public class JwtProperties {
     private String prefix;
 
    
-    public Long getExpiration() {
-        return expiration;
-    }
-    public void setExpiration(Long expiration) {
-        this.expiration = expiration;
-    }
-    public Long getRefreshExpiration() {
-        return refreshExpiration;
-    }
-    public void setRefreshExpiration(Long refreshExpiration) {
-        this.refreshExpiration = refreshExpiration;
-    }
-    public String getIssuer() {
-        return issuer;
-    }
-    public void setIssuer(String issuer) {
-        this.issuer = issuer;
-    }
-  
-    public String getPrefix() {
-        return prefix;
-    }
-    public void setPrefix(String prefix) {
-        this.prefix = prefix;
-    }
-    public String getSecret() {
-        return secret;
-    }
-    public void setSecret(String secret) {
-        this.secret = secret;
-    }
-    public String getHeader() {
-        return header;
-    }
-    public void setHeader(String header) {
-        this.header = header;
-    }
- 
+   public String getSecret() { return secret; }
+    public void setSecret(String secret) { this.secret = secret; }
+    public Long getExpiration() { return expiration; }
+    public void setExpiration(Long expiration) { this.expiration = expiration; }
+    public String getIssuer() { return issuer; }
+    public void setIssuer(String issuer) { this.issuer = issuer; }
+    public String getHeader() { return header; }
+    public void setHeader(String header) { this.header = header; }
+    public String getPrefix() { return prefix; }
+    public void setPrefix(String prefix) { this.prefix = prefix; }
     
 }

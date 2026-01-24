@@ -29,22 +29,26 @@ public class JwtUtil {
 
     public String generateToken(Authentication authentication) {
         UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
+        return generateTokenFromUserDetails(userPrincipal);
+    }
+
+    public String generateTokenFromUserDetails(UserDetailsImpl userDetails) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtProperties.getExpiration());
 
-        String roles = userPrincipal.getAuthorities().stream()
+        String roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
         return Jwts.builder()
-                .subject(String.valueOf(userPrincipal.getId()))
-                .claim("email", userPrincipal.getEmail())
-                .claim("name", userPrincipal.getName())
+                .subject(String.valueOf(userDetails.getId()))
+                .claim("email", userDetails.getEmail())
+                .claim("name", userDetails.getName())
                 .claim("roles", roles)
                 .issuer(jwtProperties.getIssuer())
                 .issuedAt(now)
                 .expiration(expiryDate)
-                .signWith(key, Jwts.SIG.HS256) 
+                .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
 
