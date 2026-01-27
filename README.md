@@ -1,3 +1,10 @@
+# Pruebas del archivo 111_autenticacion_autorizacion
+
+<img width="1182" height="717" alt="Captura de pantalla 2026-01-23 210351" src="https://github.com/user-attachments/assets/e51e7f56-e963-441a-8f10-69a7483e5a2a" />
+<img width="1179" height="1044" alt="Captura de pantalla 2026-01-23 210513" src="https://github.com/user-attachments/assets/c71765d5-9edd-4f2d-be8a-138f80330a84" />
+<img width="1190" height="779" alt="Captura de pantalla 2026-01-23 210312" src="https://github.com/user-attachments/assets/26985a37-eed8-4706-8df9-e2ecaaa0f4f6" />
+
+
 # Programación y Plataformas Web
 
 # **Spring Boot – Paginación de Datos con Spring Data JPA: Optimización y User Experience**
