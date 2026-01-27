@@ -24,7 +24,6 @@ import ec.edu.ups.icc.fundamentos01.security.services.UserDetailsServiceImpl;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     
-
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationEntryPoint unauthorizedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -41,7 +40,8 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-     @Bean
+    
+    @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
@@ -69,7 +69,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/status/**").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+                //.requestMatchers("/actuator/**").permitAll()
+
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 
                 .anyRequest().authenticated()
             );

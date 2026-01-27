@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Slice;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -24,6 +26,7 @@ import ec.edu.ups.icc.fundamentos01.products.dtos.UpdateProductDto;
 import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
 
 import ec.edu.ups.icc.fundamentos01.products.services.ProductService;
+import ec.edu.ups.icc.fundamentos01.security.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 
 @RestController
@@ -37,9 +40,10 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<ProductResponseDto> create(@Valid @RequestBody CreateProductDto dto) {
-        ProductResponseDto created = productService.create(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<ProductResponseDto> create(@Valid @RequestBody CreateProductDto dto,
+        @AuthenticationPrincipal UserDetailsImpl currentUser) {
+        //ProductResponseDto created = productService.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(dto, currentUser.getId()));
     }
 
     /*@GetMapping
@@ -81,19 +85,23 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductResponseDto> update(
-            @PathVariable("id") Long id,
-            @Valid @RequestBody UpdateProductDto dto) {
-        ProductResponseDto updated = productService.update(id, dto);
-        return ResponseEntity.ok(updated);
-    }
+ @PutMapping("/{id}")
+public ResponseEntity<ProductResponseDto> update(
+        @PathVariable Long id,
+        @Valid @RequestBody UpdateProductDto dto,
+        @AuthenticationPrincipal UserDetailsImpl currentUser) { 
+    
+    return ResponseEntity.ok(productService.update(id, dto, currentUser));
+}
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
-        productService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
+@DeleteMapping("/{id}")
+public ResponseEntity<Void> delete(
+        @PathVariable Long id,
+        @AuthenticationPrincipal UserDetailsImpl currentUser) {
+    
+    productService.delete(id, currentUser);
+    return ResponseEntity.noContent().build();
+}
 
     /**
      * Lista todos los productos con paginación básica
@@ -134,4 +142,10 @@ public class ProductController {
     return ResponseEntity.ok(products);
    }
     
+   @GetMapping
+   @PreAuthorize("hasRole('ADMIN')")
+   public ResponseEntity<List<ProductResponseDto>> findAll(){
+    List <ProductResponseDto> products=productService.findAll();
+    return ResponseEntity.ok(products);
+   }
 }

@@ -10,6 +10,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import ec.edu.ups.icc.fundamentos01.categories.dtos.CategoryResponseDto;
@@ -25,6 +27,7 @@ import ec.edu.ups.icc.fundamentos01.products.dtos.ProductResponseDto;
 import ec.edu.ups.icc.fundamentos01.products.models.Product;
 import ec.edu.ups.icc.fundamentos01.products.models.ProductEntity;
 import ec.edu.ups.icc.fundamentos01.products.repository.ProductRepository;
+import ec.edu.ups.icc.fundamentos01.security.services.UserDetailsImpl;
 import ec.edu.ups.icc.fundamentos01.users.models.UserEntity;
 import ec.edu.ups.icc.fundamentos01.users.repository.UserRepository;
 
@@ -44,32 +47,26 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponseDto create(CreateProductDto dto) {
+    public ProductResponseDto create(CreateProductDto dto, Long userId) {
 
-        // 1. VALIDAR EXISTENCIA DE RELACIONES
-        UserEntity owner = userRepository.findById(dto.userId)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado con ID: " + dto.userId));
+    UserEntity owner = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("Usuario autenticado no encontrado con ID: " + userId));
 
-        // 2. VALIDAR Y OBTENER CATEGORÍAS
-        Set<CategoryEntity> categories = validateAndGetCategories(dto.categoryIds);
+    Set<CategoryEntity> categories = validateAndGetCategories(dto.categoryIds);
 
-        // Regla: nombre único
-        if (productRepository.findByName(dto.name).isPresent()) {
-            throw new IllegalStateException("El nombre del producto ya está registrado");
-        }
-
-        // 2. CREAR MODELO DE DOMINIO
-        Product product = Product.fromDto(dto);
-
-        // 3. CONVERTIR A ENTIDAD CON RELACIONES
-        ProductEntity entity = product.toEntity(owner, categories);
-
-        // 4. PERSISTIR
-        ProductEntity saved = productRepository.save(entity);
-
-        // 5. CONVERTIR A DTO DE RESPUESTA
-        return toResponseDto(saved);
+    if (productRepository.findByName(dto.name).isPresent()) {
+        throw new IllegalStateException("El nombre del producto ya está registrado");
     }
+
+    Product product = Product.fromDto(dto);
+
+
+    ProductEntity entity = product.toEntity(owner, categories);
+
+    ProductEntity saved = productRepository.save(entity);
+
+    return toResponseDto(saved);
+}
 
     @Override
     public List<ProductResponseDto> findAll() {
@@ -117,7 +114,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponseDto update(Long id, UpdateProductDto dto) {
+    public ProductResponseDto update(Long id, UpdateProductDto dto, UserDetailsImpl currentUser) {
 
         // 1. BUSCAR PRODUCTO EXISTENTE
         ProductEntity existing = productRepository.findById(id)
@@ -140,14 +137,37 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(Long id, UserDetailsImpl currentUser) {
 
         ProductEntity product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Producto no encontrado con ID: " + id));
 
+        validateOwnership(product, currentUser);
         // Eliminación física (también se puede implementar lógica)
         productRepository.delete(product);
     }
+
+    private void validateOwnership(ProductEntity product, UserDetailsImpl currentUser) {
+    // Si es ADMIN o MODERATOR, saltar validación
+    if (hasAnyRole(currentUser, "ROLE_ADMIN", "ROLE_MODERATOR")) {
+        return; 
+    }
+
+    // Si es USER, comparar IDs
+    if (!product.getOwner().getId().equals(currentUser.getId())) {
+        throw new AccessDeniedException("No puedes modificar productos ajenos");
+    }
+}
+
+private boolean hasAnyRole(UserDetailsImpl user, String... roles) {
+    for (String role : roles) {
+        for (GrantedAuthority auth : user.getAuthorities()) {
+            if (auth.getAuthority().equals(role)) return true;
+        }
+    }
+    return false;
+}
+
 
     private ProductResponseDto toResponseDto(ProductEntity entity) {
         ProductResponseDto dto = new ProductResponseDto();

@@ -57,13 +57,13 @@ public class DataInitializer implements CommandLineRunner {
     private void createDefaultAdminUser() {
         logger.info("Verificando usuario administrador...");
 
-        String adminEmail = "admin@ups.edu.ec";
+        String adminEmail = "Administrador@ups.edu.ec";
 
         if (!userRepository.existsByEmail(adminEmail)) {
             UserEntity admin = new UserEntity();
             admin.setName("Administrador");
             admin.setEmail(adminEmail);
-            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setPassword(passwordEncoder.encode("ContraseniaDos"));
 
             // Asignar rol ADMIN
             RoleEntity adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
